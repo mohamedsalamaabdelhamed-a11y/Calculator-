@@ -57,8 +57,8 @@ jobs:
         run: |
           sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
             "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+            "platforms;android-34" \
+            "build-tools;34.0.0"
 
       # 7. التأكد من وجود AIDL
       - name: Verify Android tools
@@ -67,10 +67,10 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
 
           echo "Checking build-tools..."
-          ls -la "$ANDROID_SDK_ROOT/build-tools/35.0.0"
+          ls -la "$ANDROID_SDK_ROOT/build-tools/34.0.0"
 
           echo "Checking AIDL..."
-          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aidl" --version
+          "$ANDROID_SDK_ROOT/build-tools/34.0.0/aidl" --version
 
       # 8. تثبيت Buildozer و Cython
       - name: Install Python build tools

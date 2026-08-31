@@ -8,21 +8,32 @@ from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
 from kivy.core.window import Window
 
+
 class Calculator(App):
 
     def build(self):
-        # لون خلفية التطبيق (رمادي فاتح/أبيض فاتح كالصورة)
+
+        # لون خلفية التطبيق
         Window.clearcolor = (0.96, 0.96, 0.96, 1)
 
+        # حالة الحاسبة
         self.first_number = None
         self.operator = None
         self.new_number = True
-        self.history = []  # حفظ السجل
-        self.arabic_mode = False  # وضع الأرقام (الإنجليزية افتراضياً)
+
+        # سجل العمليات
+        self.history = []
+
+        # وضع الأرقام
+        self.arabic_mode = False
 
         # جدول تحويل الأرقام
         self.digits_en = "0123456789"
         self.digits_ar = "٠١٢٣٤٥٦٧٨٩"
+
+        # =========================
+        # الواجهة الرئيسية
+        # =========================
 
         main_layout = BoxLayout(
             orientation="vertical",
@@ -30,12 +41,15 @@ class Calculator(App):
             spacing=5
         )
 
-        # --- الشريط العلوي (زر الإعدادات) ---
+        # =========================
+        # الشريط العلوي
+        # =========================
+
         top_bar = BoxLayout(
             size_hint_y=0.08,
             orientation="horizontal"
         )
-        
+
         settings_btn = Button(
             text="⚙️",
             font_size=22,
@@ -44,13 +58,20 @@ class Calculator(App):
             background_color=(0, 0, 0, 0),
             color=(0.2, 0.2, 0.2, 1)
         )
+
         settings_btn.bind(on_press=self.open_settings)
-        
+
         top_bar.add_widget(settings_btn)
-        top_bar.add_widget(Label(size_hint_x=0.85)) # مساحة فارغة
+        top_bar.add_widget(
+            Label(size_hint_x=0.85)
+        )
+
         main_layout.add_widget(top_bar)
 
-        # --- شاشة الحاسبة ---
+        # =========================
+        # شاشة الحاسبة
+        # =========================
+
         self.display = TextInput(
             text=self.to_display_text("0"),
             readonly=True,
@@ -61,9 +82,13 @@ class Calculator(App):
             background_color=(0.96, 0.96, 0.96, 1),
             foreground_color=(0, 0, 0, 1)
         )
+
         main_layout.add_widget(self.display)
 
-        # --- لوحة الأزرار (4 أعمدة) ---
+        # =========================
+        # لوحة الأزرار
+        # =========================
+
         layout = GridLayout(
             cols=4,
             spacing=10,
@@ -79,24 +104,66 @@ class Calculator(App):
         ]
 
         # الألوان
-        ORANGE_BG = (1, 0.4, 0, 1)        # لون زر يساوي البرتقالي
-        LIGHT_TEXT_BG = (0.92, 0.92, 0.92, 1) # خلفية الأزرار العلمية
-        NUM_BG = (0.98, 0.98, 0.98, 1)    # خلفية أزرار الأرقام
-        ORANGE_TEXT = (0.9, 0.35, 0, 1)   # نص الأزرار العلمية
+
+        ORANGE_BG = (1, 0.4, 0, 1)
+
+        LIGHT_TEXT_BG = (
+            0.92,
+            0.92,
+            0.92,
+            1
+        )
+
+        NUM_BG = (
+            0.98,
+            0.98,
+            0.98,
+            1
+        )
+
+        ORANGE_TEXT = (
+            0.9,
+            0.35,
+            0,
+            1
+        )
+
+        # إنشاء الأزرار
 
         for text in buttons:
+
             if text == "=":
+
                 bg_color = ORANGE_BG
                 text_color = (1, 1, 1, 1)
-            elif text in ["AC", "⌫", "%", "÷", "×", "-", "+"]:
+
+            elif text in [
+                "AC",
+                "⌫",
+                "%",
+                "÷",
+                "×",
+                "-",
+                "+"
+            ]:
+
                 bg_color = LIGHT_TEXT_BG
                 text_color = ORANGE_TEXT
+
             else:
+
                 bg_color = NUM_BG
                 text_color = (0, 0, 0, 1)
 
-            # تحويل الأرقام على الأزرار حسب الوضع
-            display_btn_text = self.to_display_text(text) if text in "0123456789" else text
+            # تحويل الأرقام حسب الوضع
+
+            if text in "0123456789":
+
+                display_btn_text = self.to_display_text(text)
+
+            else:
+
+                display_btn_text = text
 
             button = Button(
                 text=display_btn_text,
@@ -106,181 +173,503 @@ class Calculator(App):
                 background_color=bg_color,
                 color=text_color
             )
-            button.raw_text = text  # الاحتفاظ بالنص الأصلي لسهولة البرمجة
-            button.bind(on_press=self.button_pressed)
+
+            # حفظ القيمة الأصلية
+
+            button.raw_text = text
+
+            button.bind(
+                on_press=self.button_pressed
+            )
+
             layout.add_widget(button)
 
         main_layout.add_widget(layout)
+
         return main_layout
 
-    # --- تحويل الأرقام بين العربية والإنجليزية ---
+    # ==================================
+    # تحويل الأرقام
+    # ==================================
+
     def to_display_text(self, text):
+
         if not self.arabic_mode:
             return text
-        trans = str.maketrans(self.digits_en, self.digits_ar)
-        return text.translate(trans)
+
+        trans = str.maketrans(
+            self.digits_en,
+            self.digits_ar
+        )
+
+        return str(text).translate(trans)
 
     def to_raw_text(self, text):
-        trans = str.maketrans(self.digits_ar, self.digits_en)
-        return text.translate(trans)
 
-    # --- نافذة الإعدادات والسجل ---
+        trans = str.maketrans(
+            self.digits_ar,
+            self.digits_en
+        )
+
+        return str(text).translate(trans)
+
+    # ==================================
+    # الإعدادات والسجل
+    # ==================================
+
     def open_settings(self, instance):
-        content = BoxLayout(orientation="vertical", padding=15, spacing=10)
 
-        # زر التحويل بين الأرقام العربية والإنجليزية
-        lang_text = "تغيير الأرقام إلى: الإنجليزية (123)" if self.arabic_mode else "تغيير الأرقام إلى: العربية (١٢٣)"
+        content = BoxLayout(
+            orientation="vertical",
+            padding=15,
+            spacing=10
+        )
+
+        # زر تغيير الأرقام
+
+        if self.arabic_mode:
+
+            lang_text = (
+                "تغيير الأرقام إلى: الإنجليزية (123)"
+            )
+
+        else:
+
+            lang_text = (
+                "تغيير الأرقام إلى: العربية (١٢٣)"
+            )
+
         btn_lang = Button(
             text=lang_text,
             size_hint_y=0.2,
-            background_color=(0.9, 0.35, 0, 1),
+            background_color=(
+                0.9,
+                0.35,
+                0,
+                1
+            ),
             color=(1, 1, 1, 1)
         )
-        
-        # عرض السجل
-        content.add_widget(Label(text="-- سجل العمليات --", size_hint_y=0.1, color=(0,0,0,1), bold=True))
-        
-        scroll = ScrollView(size_hint_y=0.7)
-        history_layout = BoxLayout(orientation="vertical", size_hint_y=None, spacing=5)
-        history_layout.bind(minimum_height=history_layout.setter('height'))
+
+        # عنوان السجل
+
+        content.add_widget(
+            Label(
+                text="-- سجل العمليات --",
+                size_hint_y=0.1,
+                color=(0, 0, 0, 1),
+                bold=True
+            )
+        )
+
+        # منطقة السجل
+
+        scroll = ScrollView(
+            size_hint_y=0.7
+        )
+
+        history_layout = BoxLayout(
+            orientation="vertical",
+            size_hint_y=None,
+            spacing=5
+        )
+
+        history_layout.bind(
+            minimum_height=history_layout.setter(
+                "height"
+            )
+        )
+
+        # إذا لم يوجد سجل
 
         if not self.history:
-            history_layout.add_widget(Label(text="لا يوجد سجل حتى الآن", color=(0.5,0.5,0.5,1), size_hint_y=None, height=40))
+
+            history_layout.add_widget(
+                Label(
+                    text="لا يوجد سجل حتى الآن",
+                    color=(
+                        0.5,
+                        0.5,
+                        0.5,
+                        1
+                    ),
+                    size_hint_y=None,
+                    height=40
+                )
+            )
+
         else:
+
+            # عرض الأحدث أولاً
+
             for item in reversed(self.history):
+
                 lbl = Label(
                     text=self.to_display_text(item),
-                    color=(0.1, 0.1, 0.1, 1),
+                    color=(
+                        0.1,
+                        0.1,
+                        0.1,
+                        1
+                    ),
                     size_hint_y=None,
                     height=35,
                     halign="right"
                 )
+
                 history_layout.add_widget(lbl)
 
         scroll.add_widget(history_layout)
+
         content.add_widget(scroll)
+
         content.add_widget(btn_lang)
+
+        # إنشاء النافذة
 
         popup = Popup(
             title="الإعدادات والسجل",
             content=content,
-            size_hint=(0.85, 0.7),
-            background=""
+            size_hint=(0.85, 0.7)
         )
 
-        def switch_language(btn_instance):
-            self.arabic_mode = not self.arabic_mode
-            popup.dismiss()
-            # إعادة تشغيل الواجهة بتعديل الأرقام
-            self.root.clear_widgets()
-            self.root.add_widget(self.build())
+        # تغيير اللغة
 
-        btn_lang.bind(on_press=switch_language)
+        def switch_language(btn_instance):
+
+            self.arabic_mode = not self.arabic_mode
+
+            popup.dismiss()
+
+            # إعادة بناء الواجهة
+
+            self.root.clear_widgets()
+
+            self.root.add_widget(
+                self.build()
+            )
+
+        btn_lang.bind(
+            on_press=switch_language
+        )
+
         popup.open()
 
-    # --- إدارة الأزرار والحساب ---
+    # ==================================
+    # التعامل مع الأزرار
+    # ==================================
+
     def button_pressed(self, button):
+
         value = button.raw_text
-        current_display_raw = self.to_raw_text(self.display.text)
+
+        current_display_raw = self.to_raw_text(
+            self.display.text
+        )
+
+        # ==============================
+        # الأرقام والفاصلة
+        # ==============================
 
         if value in "0123456789.":
-            if self.new_number or current_display_raw == "0" or current_display_raw == "خطأ":
-                new_val = "0." if value == "." else value
-                self.display.text = self.to_display_text(new_val)
-                self.new_number = False
-            else:
-                if value == "." and "." in current_display_raw.split()[-1]:
-                    return
-                self.display.text = self.to_display_text(current_display_raw + value)
 
-        elif value in ["+", "-", "×", "÷"]:
+            if (
+                self.new_number
+                or current_display_raw == "0"
+                or current_display_raw == "خطأ"
+            ):
+
+                if value == ".":
+
+                    new_val = "0."
+
+                else:
+
+                    new_val = value
+
+                self.display.text = (
+                    self.to_display_text(new_val)
+                )
+
+                self.new_number = False
+
+            else:
+
+                # منع تكرار النقطة
+
+                if (
+                    value == "."
+                    and "."
+                    in current_display_raw.split()[-1]
+                ):
+                    return
+
+                self.display.text = (
+                    self.to_display_text(
+                        current_display_raw + value
+                    )
+                )
+
+        # ==============================
+        # العمليات الحسابية
+        # ==============================
+
+        elif value in [
+            "+",
+            "-",
+            "×",
+            "÷"
+        ]:
+
             try:
+
                 parts = current_display_raw.split()
+
+                # إذا كانت هناك عملية سابقة
+
                 if len(parts) == 3:
+
                     self.calculate()
-                    current_display_raw = self.to_raw_text(self.display.text)
-                
-                self.first_number = float(current_display_raw)
+
+                    current_display_raw = (
+                        self.to_raw_text(
+                            self.display.text
+                        )
+                    )
+
+                self.first_number = float(
+                    current_display_raw
+                )
+
                 self.operator = value
-                res = f"{self.format_number(self.first_number)} {value} "
-                self.display.text = self.to_display_text(res)
+
+                res = (
+                    f"{self.format_number(self.first_number)} "
+                    f"{value} "
+                )
+
+                self.display.text = (
+                    self.to_display_text(res)
+                )
+
                 self.new_number = True
+
             except:
+
                 self.clear()
+
+        # ==============================
+        # يساوي
+        # ==============================
 
         elif value == "=":
+
             self.calculate()
 
+        # ==============================
+        # مسح كامل
+        # ==============================
+
         elif value in ["C", "AC"]:
+
             self.clear()
 
+        # ==============================
+        # حذف آخر رقم
+        # ==============================
+
         elif value == "⌫":
-            if current_display_raw in ["خطأ", "0"]:
+
+            if current_display_raw in [
+                "خطأ",
+                "0"
+            ]:
+
                 self.clear()
+
             else:
-                updated = current_display_raw.strip()[:-1]
+
+                updated = (
+                    current_display_raw.strip()[:-1]
+                )
+
                 if not updated:
+
                     updated = "0"
-                self.display.text = self.to_display_text(updated)
+
+                self.display.text = (
+                    self.to_display_text(updated)
+                )
+
+        # ==============================
+        # النسبة المئوية
+        # ==============================
 
         elif value == "%":
+
             try:
+
                 parts = current_display_raw.split()
+
                 if len(parts) == 3:
+
                     num = float(parts[2])
-                    res = f"{parts[0]} {parts[1]} {self.format_number(num / 100)}"
+
+                    res = (
+                        f"{parts[0]} "
+                        f"{parts[1]} "
+                        f"{self.format_number(num / 100)}"
+                    )
+
                 else:
-                    num = float(current_display_raw)
-                    res = self.format_number(num / 100)
-                self.display.text = self.to_display_text(res)
+
+                    num = float(
+                        current_display_raw
+                    )
+
+                    res = self.format_number(
+                        num / 100
+                    )
+
+                self.display.text = (
+                    self.to_display_text(res)
+                )
+
             except:
+
                 self.display.text = "خطأ"
 
+        # ==============================
+        # زر إعادة الضبط 🔄
+        # ==============================
+
+        elif value == "🔄":
+
+            self.clear()
+
+    # ==================================
+    # إجراء العملية الحسابية
+    # ==================================
+
     def calculate(self):
+
         try:
-            raw_text = self.to_raw_text(self.display.text)
+
+            raw_text = self.to_raw_text(
+                self.display.text
+            )
+
             parts = raw_text.split()
+
             if len(parts) != 3:
+
                 return
 
             num1 = float(parts[0])
+
             op = parts[1]
+
             num2 = float(parts[2])
 
-            if op == "+": res = num1 + num2
-            elif op == "-": res = num1 - num2
-            elif op == "×": res = num1 * num2
+            # العملية
+
+            if op == "+":
+
+                res = num1 + num2
+
+            elif op == "-":
+
+                res = num1 - num2
+
+            elif op == "×":
+
+                res = num1 * num2
+
             elif op == "÷":
+
                 if num2 == 0:
+
                     self.display.text = "خطأ"
+
                     self.reset_state()
+
                     return
+
                 res = num1 / num2
-            else: return
 
-            formatted_res = self.format_number(res)
-            # إضافة العملية إلى السجل
-            self.history.append(f"{raw_text} = {formatted_res}")
+            else:
 
-            self.display.text = self.to_display_text(formatted_formatted_res if 'formatted_formatted_res' in locals() else formatted_res)
+                return
+
+            # تنسيق النتيجة
+
+            formatted_res = self.format_number(
+                res
+            )
+
+            # حفظ العملية في السجل
+
+            self.history.append(
+                f"{raw_text} = {formatted_res}"
+            )
+
+            # عرض النتيجة
+
+            self.display.text = (
+                self.to_display_text(
+                    formatted_res
+                )
+            )
+
             self.reset_state()
+
         except:
+
             self.display.text = "خطأ"
+
             self.reset_state()
+
+    # ==================================
+    # مسح الحاسبة
+    # ==================================
 
     def clear(self):
-        self.display.text = self.to_display_text("0")
+
+        self.display.text = (
+            self.to_display_text("0")
+        )
+
         self.reset_state()
 
+    # ==================================
+    # إعادة الحالة
+    # ==================================
+
     def reset_state(self):
+
         self.first_number = None
+
         self.operator = None
+
         self.new_number = True
 
+    # ==================================
+    # تنسيق الأرقام
+    # ==================================
+
     def format_number(self, number):
+
         if number == int(number):
+
             return str(int(number))
-        return f"{number:.8f}".rstrip("0").rstrip(".")
+
+        return (
+            f"{number:.8f}"
+            .rstrip("0")
+            .rstrip(".")
+        )
+
 
 if __name__ == "__main__":
+
     Calculator().run()

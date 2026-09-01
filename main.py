@@ -1,4 +1,6 @@
 import re
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -10,6 +12,21 @@ from kivy.uix.popup import Popup
 from kivy.graphics import Color, RoundedRectangle
 from kivy.core.window import Window
 from kivy.core.text import LabelBase
+
+
+# =========================================================
+# معالجة النص العربي (تعديل الحروف والاتجاه)
+# =========================================================
+
+def fix_text(text):
+    """إصلاح عرض النص العربي وتوصيل الأحرف بشكل صحيح"""
+    if not text:
+        return ""
+    # التحقق مما إذا كان النص يحتوي على حروف عربية
+    if re.search(r'[\u0600-\u06FF]', text):
+        reshaped = arabic_reshaper.reshape(text)
+        return get_display(reshaped)
+    return text
 
 
 # =========================================================
@@ -48,7 +65,6 @@ class XiaomiButton(Button):
         radius=25,
         **kwargs
     ):
-
         super().__init__(**kwargs)
 
         self.background_normal = ""
@@ -62,9 +78,7 @@ class XiaomiButton(Button):
         self.radius = radius
 
         with self.canvas.before:
-
             self.canvas_color = Color(*self.custom_bg)
-
             self.rect = RoundedRectangle(
                 pos=self.pos,
                 size=self.size,
@@ -77,7 +91,6 @@ class XiaomiButton(Button):
         )
 
     def update_rect(self, instance, value):
-
         self.rect.pos = instance.pos
         self.rect.size = instance.size
 
@@ -89,8 +102,7 @@ class XiaomiButton(Button):
 class CalculatorApp(App):
 
     def build(self):
-
-        self.title = "الحاسبة"
+        self.title = fix_text("الحاسبة")
 
         self.expression = ""
         self.history = []
@@ -115,7 +127,6 @@ class CalculatorApp(App):
             spacing=5
         )
 
-        # زر القائمة ⋮
         menu_button = Button(
             text="⋮",
             font_size="30sp",
@@ -128,18 +139,16 @@ class CalculatorApp(App):
             on_release=self.show_menu
         )
 
-        # عنوان الحاسبة
         calculator_title = Label(
-            text="الحاسبة",
+            text=fix_text("الحاسبة"),
             font_name=ARABIC_FONT,
             font_size="22sp",
             color=(0.15, 0.15, 0.15, 1),
             size_hint_x=0.42
         )
 
-        # المحول
         converter_button = Button(
-            text="المحول",
+            text=fix_text("المحول"),
             font_name=ARABIC_FONT,
             font_size="20sp",
             color=(0.45, 0.45, 0.45, 1),
@@ -147,7 +156,6 @@ class CalculatorApp(App):
             size_hint_x=0.43
         )
 
-        # المحول حاليًا للعرض فقط
         converter_button.bind(
             on_release=self.show_converter_message
         )
@@ -173,9 +181,10 @@ class CalculatorApp(App):
             font_size="18sp",
             color=(0.5, 0.5, 0.5, 1),
             halign="right",
-            valign="bottom",
-            text_size=(Window.width - 50, None)
+            valign="bottom"
         )
+        # ربط الحجم الديناميكي لضبط المحاذاة جهة اليمين
+        self.sub_display.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
 
         self.main_display = Label(
             text="0",
@@ -183,9 +192,9 @@ class CalculatorApp(App):
             color=(0, 0, 0, 1),
             bold=True,
             halign="right",
-            valign="bottom",
-            text_size=(Window.width - 50, None)
+            valign="bottom"
         )
+        self.main_display.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
 
         display_box.add_widget(self.sub_display)
         display_box.add_widget(self.main_display)
@@ -202,43 +211,13 @@ class CalculatorApp(App):
             size_hint_y=0.64
         )
 
-        # الألوان
         c_white = (1, 1, 1, 1)
-
-        c_gray_btn = (
-            0.94,
-            0.94,
-            0.94,
-            1
-        )
-
-        c_orange = (
-            1,
-            0.4,
-            0,
-            1
-        )
-
-        c_black_text = (
-            0.08,
-            0.08,
-            0.08,
-            1
-        )
-
-        c_orange_text = (
-            1,
-            0.4,
-            0,
-            1
-        )
-
-        # =================================================
-        # الأزرار
-        # =================================================
+        c_gray_btn = (0.94, 0.94, 0.94, 1)
+        c_orange = (1, 0.4, 0, 1)
+        c_black_text = (0.08, 0.08, 0.08, 1)
+        c_orange_text = (1, 0.4, 0, 1)
 
         buttons = [
-
             ("AC", c_gray_btn, c_orange_text),
             ("⌫", c_gray_btn, c_orange_text),
             ("%", c_gray_btn, c_orange_text),
@@ -266,17 +245,12 @@ class CalculatorApp(App):
         ]
 
         for text, bg, fg in buttons:
-
             btn = XiaomiButton(
                 text=text,
                 bg_color=bg,
                 text_color=fg
             )
-
-            btn.bind(
-                on_release=self.on_button_press
-            )
-
+            btn.bind(on_release=self.on_button_press)
             grid.add_widget(btn)
 
         main_layout.add_widget(grid)
@@ -288,7 +262,6 @@ class CalculatorApp(App):
     # =====================================================
 
     def update_display(self):
-
         if self.expression:
             self.main_display.text = self.expression
         else:
@@ -299,37 +272,20 @@ class CalculatorApp(App):
     # =====================================================
 
     def on_button_press(self, instance):
-
         text = instance.text
 
-        # مسح
         if text == "AC":
-
             self.expression = ""
             self.sub_display.text = ""
-
-        # حذف آخر رقم
         elif text == "⌫":
-
             self.expression = self.expression[:-1]
-
-        # النتيجة
         elif text == "=":
-
             self.calculate()
-
-        # المحول
         elif text == "⇄":
-
             self.show_converter_message(None)
-
-        # النسبة المئوية
         elif text == "%":
-
             self.add_percent()
-
         else:
-
             self.add_to_expression(text)
 
         self.update_display()
@@ -339,27 +295,18 @@ class CalculatorApp(App):
     # =====================================================
 
     def add_to_expression(self, text):
-
         operators = "+−×÷"
 
-        # منع وضع عملية في البداية
         if text in operators:
-
             if not self.expression:
                 return
-
-            # منع عمليتين متتاليتين
             if self.expression[-1] in operators:
                 self.expression = self.expression[:-1]
 
-        # منع أكثر من فاصلة في الرقم نفسه
         if text == ".":
-
             parts = re.split(r"[+−×÷]", self.expression)
-
             if parts and "." in parts[-1]:
                 return
-
             if not self.expression or self.expression[-1] in operators:
                 self.expression += "0"
 
@@ -370,34 +317,17 @@ class CalculatorApp(App):
     # =====================================================
 
     def add_percent(self):
-
         if not self.expression:
             return
 
-        match = re.search(
-            r"(\d+(?:\.\d+)?)$",
-            self.expression
-        )
-
+        match = re.search(r"(\d+(?:\.\d+)?)$", self.expression)
         if match:
-
             number = match.group(1)
-
             try:
-
                 value = float(number)
                 percent = value / 100
-
-                if percent.is_integer():
-                    result = str(int(percent))
-                else:
-                    result = str(percent)
-
-                self.expression = (
-                    self.expression[:-len(number)]
-                    + result
-                )
-
+                result = str(int(percent)) if percent.is_integer() else str(percent)
+                self.expression = self.expression[:-len(number)] + result
             except Exception:
                 pass
 
@@ -406,13 +336,10 @@ class CalculatorApp(App):
     # =====================================================
 
     def calculate(self):
-
         if not self.expression:
             return
 
         try:
-
-            # تحويل الرموز إلى Python
             formatted_expr = (
                 self.expression
                 .replace("×", "*")
@@ -420,50 +347,28 @@ class CalculatorApp(App):
                 .replace("−", "-")
             )
 
-            # السماح فقط بالأرقام والعمليات
-            if not re.fullmatch(
-                r"[0-9+\-*/(). ]+",
-                formatted_expr
-            ):
+            if not re.fullmatch(r"[0-9+\-*/(). ]+", formatted_expr):
                 raise ValueError
 
             result_value = eval(
                 formatted_expr,
-                {
-                    "__builtins__": None
-                },
+                {"__builtins__": None},
                 {}
             )
 
-            # إذا كانت النتيجة رقمًا صحيحًا
             if isinstance(result_value, float):
-
-                if result_value.is_integer():
-                    result = str(
-                        int(result_value)
-                    )
-                else:
-                    result = str(
-                        round(result_value, 10)
-                    )
-
+                result = str(int(result_value)) if result_value.is_integer() else str(round(result_value, 10))
             else:
                 result = str(result_value)
 
-            # حفظ العملية
-            record = (
-                f"{self.expression} = {result}"
-            )
-
+            record = f"{self.expression} = {result}"
             self.history.append(record)
 
             self.sub_display.text = self.expression
-
             self.expression = result
 
         except Exception:
-
-            self.main_display.text = "خطأ"
+            self.main_display.text = fix_text("خطأ")
             self.expression = ""
 
     # =====================================================
@@ -471,34 +376,30 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_menu(self, instance):
-
         content = BoxLayout(
             orientation="vertical",
             padding=12,
             spacing=8
         )
 
-        # السجل
         history_button = Button(
-            text="السجل",
+            text=fix_text("السجل"),
             font_name=ARABIC_FONT,
             font_size="20sp",
             color=(0.1, 0.1, 0.1, 1),
             background_color=(0.94, 0.94, 0.94, 1)
         )
 
-        # مسح السجل
         clear_button = Button(
-            text="مسح السجل",
+            text=fix_text("مسح السجل"),
             font_name=ARABIC_FONT,
             font_size="20sp",
             color=(1, 0.4, 0, 1),
             background_color=(0.94, 0.94, 0.94, 1)
         )
 
-        # حول التطبيق
         about_button = Button(
-            text="حول التطبيق",
+            text=fix_text("حول التطبيق"),
             font_name=ARABIC_FONT,
             font_size="20sp",
             color=(0.1, 0.1, 0.1, 1),
@@ -510,33 +411,16 @@ class CalculatorApp(App):
         content.add_widget(about_button)
 
         popup = Popup(
-            title="الخيارات",
+            title=fix_text("الخيارات"),
             title_font=ARABIC_FONT,
             content=content,
             size_hint=(0.75, 0.40),
             separator_height=1
         )
 
-        history_button.bind(
-            on_release=lambda x: (
-                popup.dismiss(),
-                self.show_history(None)
-            )
-        )
-
-        clear_button.bind(
-            on_release=lambda x: (
-                popup.dismiss(),
-                self.clear_history()
-            )
-        )
-
-        about_button.bind(
-            on_release=lambda x: (
-                popup.dismiss(),
-                self.show_about()
-            )
-        )
+        history_button.bind(on_release=lambda x: (popup.dismiss(), self.show_history(None)))
+        clear_button.bind(on_release=lambda x: (popup.dismiss(), self.clear_history()))
+        about_button.bind(on_release=lambda x: (popup.dismiss(), self.show_about()))
 
         popup.open()
 
@@ -545,7 +429,6 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_history(self, instance):
-
         content = BoxLayout(
             orientation="vertical",
             padding=12,
@@ -559,30 +442,20 @@ class CalculatorApp(App):
             size_hint_y=None,
             spacing=6
         )
-
-        history_layout.bind(
-            minimum_height=history_layout.setter("height")
-        )
+        history_layout.bind(minimum_height=history_layout.setter("height"))
 
         if not self.history:
-
             empty_label = Label(
-                text="لا يوجد سجل حاليًا",
+                text=fix_text("لا يوجد سجل حاليًا"),
                 font_name=ARABIC_FONT,
                 font_size="18sp",
                 color=(0.25, 0.25, 0.25, 1),
                 size_hint_y=None,
                 height=50
             )
-
-            history_layout.add_widget(
-                empty_label
-            )
-
+            history_layout.add_widget(empty_label)
         else:
-
             for item in reversed(self.history):
-
                 lbl = Label(
                     text=item,
                     font_size="18sp",
@@ -592,21 +465,19 @@ class CalculatorApp(App):
                     size_hint_y=None,
                     height=48
                 )
-
+                lbl.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
                 history_layout.add_widget(lbl)
 
         scroll.add_widget(history_layout)
-
         content.add_widget(scroll)
 
-        # أزرار أسفل السجل
         bottom_bar = BoxLayout(
             size_hint_y=0.18,
             spacing=8
         )
 
         clear_button = Button(
-            text="مسح السجل",
+            text=fix_text("مسح السجل"),
             font_name=ARABIC_FONT,
             font_size="18sp",
             color=(1, 1, 1, 1),
@@ -614,7 +485,7 @@ class CalculatorApp(App):
         )
 
         close_button = Button(
-            text="إغلاق",
+            text=fix_text("إغلاق"),
             font_name=ARABIC_FONT,
             font_size="18sp",
             color=(0.2, 0.2, 0.2, 1),
@@ -627,22 +498,14 @@ class CalculatorApp(App):
         content.add_widget(bottom_bar)
 
         popup = Popup(
-            title="سجل العمليات الحسابية",
+            title=fix_text("سجل العمليات الحسابية"),
             title_font=ARABIC_FONT,
             content=content,
             size_hint=(0.90, 0.70)
         )
 
-        clear_button.bind(
-            on_release=lambda x: (
-                popup.dismiss(),
-                self.clear_history()
-            )
-        )
-
-        close_button.bind(
-            on_release=popup.dismiss
-        )
+        clear_button.bind(on_release=lambda x: (popup.dismiss(), self.clear_history()))
+        close_button.bind(on_release=popup.dismiss)
 
         popup.open()
 
@@ -651,7 +514,6 @@ class CalculatorApp(App):
     # =====================================================
 
     def clear_history(self):
-
         self.history.clear()
 
     # =====================================================
@@ -659,7 +521,6 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_about(self):
-
         content = BoxLayout(
             orientation="vertical",
             padding=20,
@@ -667,7 +528,7 @@ class CalculatorApp(App):
         )
 
         text = Label(
-            text="الحاسبة\n\nتطبيق حاسبة بسيط وسريع",
+            text=fix_text("الحاسبة\n\nتطبيق حاسبة بسيط وسريع"),
             font_name=ARABIC_FONT,
             font_size="19sp",
             color=(0.15, 0.15, 0.15, 1),
@@ -676,7 +537,7 @@ class CalculatorApp(App):
         )
 
         close_button = Button(
-            text="إغلاق",
+            text=fix_text("إغلاق"),
             font_name=ARABIC_FONT,
             font_size="18sp",
             size_hint_y=0.25,
@@ -688,16 +549,13 @@ class CalculatorApp(App):
         content.add_widget(close_button)
 
         popup = Popup(
-            title="حول التطبيق",
+            title=fix_text("حول التطبيق"),
             title_font=ARABIC_FONT,
             content=content,
             size_hint=(0.80, 0.45)
         )
 
-        close_button.bind(
-            on_release=popup.dismiss
-        )
-
+        close_button.bind(on_release=popup.dismiss)
         popup.open()
 
     # =====================================================
@@ -705,7 +563,6 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_converter_message(self, instance):
-
         content = BoxLayout(
             orientation="vertical",
             padding=20,
@@ -713,7 +570,7 @@ class CalculatorApp(App):
         )
 
         label = Label(
-            text="المحول\n\nسيتم إضافة أدوات التحويل لاحقًا",
+            text=fix_text("المحول\n\nسيتم إضافة أدوات التحويل لاحقًا"),
             font_name=ARABIC_FONT,
             font_size="19sp",
             color=(0.15, 0.15, 0.15, 1),
@@ -721,7 +578,7 @@ class CalculatorApp(App):
         )
 
         close_button = Button(
-            text="إغلاق",
+            text=fix_text("إغلاق"),
             font_name=ARABIC_FONT,
             font_size="18sp",
             size_hint_y=0.25,
@@ -733,16 +590,13 @@ class CalculatorApp(App):
         content.add_widget(close_button)
 
         popup = Popup(
-            title="المحول",
+            title=fix_text("المحول"),
             title_font=ARABIC_FONT,
             content=content,
             size_hint=(0.80, 0.45)
         )
 
-        close_button.bind(
-            on_release=popup.dismiss
-        )
-
+        close_button.bind(on_release=popup.dismiss)
         popup.open()
 
 

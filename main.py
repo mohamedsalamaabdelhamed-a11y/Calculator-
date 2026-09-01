@@ -1,675 +1,203 @@
+
+import re
 from kivy.app import App
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.popup import Popup
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.popup import Popup
+from kivy.uix.togglebutton import ToggleButton
+from kivy.graphics import Color, RoundedRectangle
 from kivy.core.window import Window
 
+# ضبط خلفية التطبيق باللون الأبيض
+Window.clearcolor = (0.97, 0.97, 0.97, 1)
 
-class Calculator(App):
+class XiaomiButton(Button):
+    def __init__(self, bg_color=(1, 1, 1, 1), text_color=(0, 0, 0, 1), radius=25, **kwargs):
+        super().__init__(**kwargs)
+        self.background_normal = ''
+        self.background_color = (0, 0, 0, 0)
+        self.color = text_color
+        self.font_size = '22sp'
+        self.bold = True
+        self.custom_bg = bg_color
+        self.radius = radius
 
+        with self.canvas.before:
+            self.canvas_color = Color(*self.custom_bg)
+            self.rect = RoundedRectangle(pos=self.pos, size=self.size, radius=[self.radius])
+
+        self.bind(pos=self.update_rect, size=self.update_rect)
+
+    def update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
+class CalculatorApp(App):
     def build(self):
-
-        # لون خلفية التطبيق
-        Window.clearcolor = (0.96, 0.96, 0.96, 1)
-
-        # حالة الحاسبة
-        self.first_number = None
-        self.operator = None
-        self.new_number = True
-
-        # سجل العمليات
+        self.title = "Calculator"
+        self.expression = ""
         self.history = []
+        self.arabic_digits = False
 
-        # وضع الأرقام
-        self.arabic_mode = False
+        # الحاوية الرئيسية
+        main_layout = BoxLayout(orientation='vertical', padding=16, spacing=10)
 
-        # جدول تحويل الأرقام
-        self.digits_en = "0123456789"
-        self.digits_ar = "٠١٢٣٤٥٦٧٨٩"
+        # الشريط العلوي (الإعدادات/السجل)
+        top_bar = BoxLayout(size_hint_y=0.08, spacing=10)
+        
+        btn_history = Button(text="السجل", size_hint_x=0.3, background_color=(0,0,0,0), color=(0.4, 0.4, 0.4, 1))
+        btn_history.bind(on_release=self.show_history)
+        
+        btn_lang = ToggleButton(text="عربي / EN", size_hint_x=0.4, background_color=(0,0,0,0), color=(0.4, 0.4, 0.4, 1))
+        btn_lang.bind(on_release=self.toggle_language)
 
-        # =========================
-        # الواجهة الرئيسية
-        # =========================
-
-        main_layout = BoxLayout(
-            orientation="vertical",
-            padding=[15, 10, 15, 15],
-            spacing=5
-        )
-
-        # =========================
-        # الشريط العلوي
-        # =========================
-
-        top_bar = BoxLayout(
-            size_hint_y=0.08,
-            orientation="horizontal"
-        )
-
-        settings_btn = Button(
-            text="⚙️",
-            font_size=22,
-            size_hint_x=0.15,
-            background_normal="",
-            background_color=(0, 0, 0, 0),
-            color=(0.2, 0.2, 0.2, 1)
-        )
-
-        settings_btn.bind(on_press=self.open_settings)
-
-        top_bar.add_widget(settings_btn)
-        top_bar.add_widget(
-            Label(size_hint_x=0.85)
-        )
-
+        top_bar.add_widget(btn_history)
+        top_bar.add_widget(Label(size_hint_x=0.3)) # مساحة فارغة
+        top_bar.add_widget(btn_lang)
         main_layout.add_widget(top_bar)
 
-        # =========================
-        # شاشة الحاسبة
-        # =========================
-
-        self.display = TextInput(
-            text=self.to_display_text("0"),
-            readonly=True,
-            halign="right",
-            font_size=48,
-            multiline=False,
-            size_hint_y=0.22,
-            background_color=(0.96, 0.96, 0.96, 1),
-            foreground_color=(0, 0, 0, 1)
+        # شاشة عرض الحسابات والنتائج
+        display_box = BoxLayout(orientation='vertical', size_hint_y=0.27, padding=[10, 10])
+        
+        self.sub_display = Label(
+            text="", 
+            font_size='18sp', 
+            color=(0.5, 0.5, 0.5, 1), 
+            halign='right', 
+            valign='bottom',
+            text_size=(Window.width - 40, None)
         )
-
-        main_layout.add_widget(self.display)
-
-        # =========================
-        # لوحة الأزرار
-        # =========================
-
-        layout = GridLayout(
-            cols=4,
-            spacing=10,
-            padding=5
+        self.main_display = Label(
+            text="0", 
+            font_size='48sp', 
+            color=(0, 0, 0, 1), 
+            bold=True, 
+            halign='right', 
+            valign='bottom',
+            text_size=(Window.width - 40, None)
         )
+        
+        display_box.add_widget(self.sub_display)
+        display_box.add_widget(self.main_display)
+        main_layout.add_widget(display_box)
 
+        # شبكة الأزرار
+        grid = GridLayout(cols=4, spacing=12, size_hint_y=0.65)
+
+        # الألوان المعتمدة في تصميم شاومي
+        c_white = (1, 1, 1, 1)
+        c_gray_btn = (0.94, 0.94, 0.94, 1)
+        c_orange = (1, 0.4, 0, 1)
+        c_orange_text = (1, 0.4, 0, 1)
+        c_black_text = (0.1, 0.1, 0.1, 1)
+
+        # أزرار لوحة التحكم
         buttons = [
-            "AC", "⌫", "%", "÷",
-            "7", "8", "9", "×",
-            "4", "5", "6", "-",
-            "1", "2", "3", "+",
-            "🔄", "0", ".", "="
+            ('AC', c_gray_btn, c_orange_text),
+            ('⌫', c_gray_btn, c_orange_text),
+            ('%', c_gray_btn, c_orange_text),
+            ('÷', c_gray_btn, c_orange_text),
+
+            ('7', c_white, c_black_text),
+            ('8', c_white, c_black_text),
+            ('9', c_white, c_black_text),
+            ('×', c_gray_btn, c_orange_text),
+
+            ('4', c_white, c_black_text),
+            ('5', c_white, c_black_text),
+            ('6', c_white, c_black_text),
+            ('-', c_gray_btn, c_orange_text),
+
+            ('1', c_white, c_black_text),
+            ('2', c_white, c_black_text),
+            ('3', c_white, c_black_text),
+            ('+', c_gray_btn, c_orange_text),
+
+            ('⚙', c_white, c_orange_text),
+            ('0', c_white, c_black_text),
+            ('.', c_white, c_black_text),
+            ('=', c_orange, c_white)
         ]
 
-        # الألوان
+        for text, bg, fg in buttons:
+            btn = XiaomiButton(text=text, bg_color=bg, text_color=fg)
+            btn.bind(on_release=self.on_button_press)
+            grid.add_widget(btn)
 
-        ORANGE_BG = (1, 0.4, 0, 1)
-
-        LIGHT_TEXT_BG = (
-            0.92,
-            0.92,
-            0.92,
-            1
-        )
-
-        NUM_BG = (
-            0.98,
-            0.98,
-            0.98,
-            1
-        )
-
-        ORANGE_TEXT = (
-            0.9,
-            0.35,
-            0,
-            1
-        )
-
-        # إنشاء الأزرار
-
-        for text in buttons:
-
-            if text == "=":
-
-                bg_color = ORANGE_BG
-                text_color = (1, 1, 1, 1)
-
-            elif text in [
-                "AC",
-                "⌫",
-                "%",
-                "÷",
-                "×",
-                "-",
-                "+"
-            ]:
-
-                bg_color = LIGHT_TEXT_BG
-                text_color = ORANGE_TEXT
-
-            else:
-
-                bg_color = NUM_BG
-                text_color = (0, 0, 0, 1)
-
-            # تحويل الأرقام حسب الوضع
-
-            if text in "0123456789":
-
-                display_btn_text = self.to_display_text(text)
-
-            else:
-
-                display_btn_text = text
-
-            button = Button(
-                text=display_btn_text,
-                font_size=24,
-                bold=True,
-                background_normal="",
-                background_color=bg_color,
-                color=text_color
-            )
-
-            # حفظ القيمة الأصلية
-
-            button.raw_text = text
-
-            button.bind(
-                on_press=self.button_pressed
-            )
-
-            layout.add_widget(button)
-
-        main_layout.add_widget(layout)
-
+        main_layout.add_widget(grid)
         return main_layout
 
-    # ==================================
-    # تحويل الأرقام
-    # ==================================
-
-    def to_display_text(self, text):
-
-        if not self.arabic_mode:
+    def convert_digits(self, text):
+        if not self.arabic_digits:
             return text
+        en_to_ar = str.maketrans("0123456789", "٠١٢٣٤٥٦٧٨٩")
+        return text.translate(en_to_ar)
 
-        trans = str.maketrans(
-            self.digits_en,
-            self.digits_ar
-        )
+    def toggle_language(self, instance):
+        self.arabic_digits = instance.state == 'down'
+        self.update_display()
 
-        return str(text).translate(trans)
+    def update_display(self):
+        disp_text = self.expression if self.expression else "0"
+        self.main_display.text = self.convert_digits(disp_text)
 
-    def to_raw_text(self, text):
+    def on_button_press(self, instance):
+        text = instance.text
 
-        trans = str.maketrans(
-            self.digits_ar,
-            self.digits_en
-        )
-
-        return str(text).translate(trans)
-
-    # ==================================
-    # الإعدادات والسجل
-    # ==================================
-
-    def open_settings(self, instance):
-
-        content = BoxLayout(
-            orientation="vertical",
-            padding=15,
-            spacing=10
-        )
-
-        # زر تغيير الأرقام
-
-        if self.arabic_mode:
-
-            lang_text = (
-                "تغيير الأرقام إلى: الإنجليزية (123)"
-            )
-
+        if text == 'AC':
+            self.expression = ""
+            self.sub_display.text = ""
+        elif text == '⌫':
+            self.expression = self.expression[:-1]
+        elif text == '=':
+            self.calculate()
+        elif text == '⚙':
+            self.show_history(None)
         else:
+            self.expression += text
 
-            lang_text = (
-                "تغيير الأرقام إلى: العربية (١٢٣)"
-            )
+        self.update_display()
 
-        btn_lang = Button(
-            text=lang_text,
-            size_hint_y=0.2,
-            background_color=(
-                0.9,
-                0.35,
-                0,
-                1
-            ),
-            color=(1, 1, 1, 1)
-        )
+    def calculate(self):
+        try:
+            formatted_expr = self.expression.replace('×', '*').replace('÷', '/')
+            result = str(eval(formatted_expr))
+            
+            # إضافة الحساب للسجل
+            record = f"{self.expression} = {result}"
+            self.history.append(record)
+            
+            self.sub_display.text = self.convert_digits(self.expression)
+            self.expression = result
+        except Exception:
+            self.main_display.text = "خطأ"
+            self.expression = ""
 
-        # عنوان السجل
-
-        content.add_widget(
-            Label(
-                text="-- سجل العمليات --",
-                size_hint_y=0.1,
-                color=(0, 0, 0, 1),
-                bold=True
-            )
-        )
-
-        # منطقة السجل
-
-        scroll = ScrollView(
-            size_hint_y=0.7
-        )
-
-        history_layout = BoxLayout(
-            orientation="vertical",
-            size_hint_y=None,
-            spacing=5
-        )
-
-        history_layout.bind(
-            minimum_height=history_layout.setter(
-                "height"
-            )
-        )
-
-        # إذا لم يوجد سجل
+    def show_history(self, instance):
+        content = BoxLayout(orientation='vertical', padding=10, spacing=10)
+        scroll = ScrollView()
+        history_layout = BoxLayout(orientation='vertical', size_hint_y=None)
+        history_layout.bind(minimum_height=history_layout.setter('height'))
 
         if not self.history:
-
-            history_layout.add_widget(
-                Label(
-                    text="لا يوجد سجل حتى الآن",
-                    color=(
-                        0.5,
-                        0.5,
-                        0.5,
-                        1
-                    ),
-                    size_hint_y=None,
-                    height=40
-                )
-            )
-
+            history_layout.add_widget(Label(text="لا يوجد سجل حظر حالياً", size_hint_y=None, height=40, color=(0,0,0,1)))
         else:
-
-            # عرض الأحدث أولاً
-
             for item in reversed(self.history):
-
-                lbl = Label(
-                    text=self.to_display_text(item),
-                    color=(
-                        0.1,
-                        0.1,
-                        0.1,
-                        1
-                    ),
-                    size_hint_y=None,
-                    height=35,
-                    halign="right"
-                )
-
+                lbl = Label(text=self.convert_digits(item), size_hint_y=None, height=40, color=(0.2, 0.2, 0.2, 1), font_size='18sp')
                 history_layout.add_widget(lbl)
 
         scroll.add_widget(history_layout)
-
         content.add_widget(scroll)
 
-        content.add_widget(btn_lang)
-
-        # إنشاء النافذة
-
-        popup = Popup(
-            title="الإعدادات والسجل",
-            content=content,
-            size_hint=(0.85, 0.7)
-        )
-
-        # تغيير اللغة
-
-        def switch_language(btn_instance):
-
-            self.arabic_mode = not self.arabic_mode
-
-            popup.dismiss()
-
-            # إعادة بناء الواجهة
-
-            self.root.clear_widgets()
-
-            self.root.add_widget(
-                self.build()
-            )
-
-        btn_lang.bind(
-            on_press=switch_language
-        )
-
+        close_btn = Button(text="إغلاق", size_hint_y=0.15, background_color=(1, 0.4, 0, 1))
+        popup = Popup(title='سجل العمليات الحسابية', content=content, size_hint=(0.85, 0.6))
+        close_btn.bind(on_release=popup.dismiss)
+        content.add_widget(close_btn)
+        
         popup.open()
 
-    # ==================================
-    # التعامل مع الأزرار
-    # ==================================
-
-    def button_pressed(self, button):
-
-        value = button.raw_text
-
-        current_display_raw = self.to_raw_text(
-            self.display.text
-        )
-
-        # ==============================
-        # الأرقام والفاصلة
-        # ==============================
-
-        if value in "0123456789.":
-
-            if (
-                self.new_number
-                or current_display_raw == "0"
-                or current_display_raw == "خطأ"
-            ):
-
-                if value == ".":
-
-                    new_val = "0."
-
-                else:
-
-                    new_val = value
-
-                self.display.text = (
-                    self.to_display_text(new_val)
-                )
-
-                self.new_number = False
-
-            else:
-
-                # منع تكرار النقطة
-
-                if (
-                    value == "."
-                    and "."
-                    in current_display_raw.split()[-1]
-                ):
-                    return
-
-                self.display.text = (
-                    self.to_display_text(
-                        current_display_raw + value
-                    )
-                )
-
-        # ==============================
-        # العمليات الحسابية
-        # ==============================
-
-        elif value in [
-            "+",
-            "-",
-            "×",
-            "÷"
-        ]:
-
-            try:
-
-                parts = current_display_raw.split()
-
-                # إذا كانت هناك عملية سابقة
-
-                if len(parts) == 3:
-
-                    self.calculate()
-
-                    current_display_raw = (
-                        self.to_raw_text(
-                            self.display.text
-                        )
-                    )
-
-                self.first_number = float(
-                    current_display_raw
-                )
-
-                self.operator = value
-
-                res = (
-                    f"{self.format_number(self.first_number)} "
-                    f"{value} "
-                )
-
-                self.display.text = (
-                    self.to_display_text(res)
-                )
-
-                self.new_number = True
-
-            except:
-
-                self.clear()
-
-        # ==============================
-        # يساوي
-        # ==============================
-
-        elif value == "=":
-
-            self.calculate()
-
-        # ==============================
-        # مسح كامل
-        # ==============================
-
-        elif value in ["C", "AC"]:
-
-            self.clear()
-
-        # ==============================
-        # حذف آخر رقم
-        # ==============================
-
-        elif value == "⌫":
-
-            if current_display_raw in [
-                "خطأ",
-                "0"
-            ]:
-
-                self.clear()
-
-            else:
-
-                updated = (
-                    current_display_raw.strip()[:-1]
-                )
-
-                if not updated:
-
-                    updated = "0"
-
-                self.display.text = (
-                    self.to_display_text(updated)
-                )
-
-        # ==============================
-        # النسبة المئوية
-        # ==============================
-
-        elif value == "%":
-
-            try:
-
-                parts = current_display_raw.split()
-
-                if len(parts) == 3:
-
-                    num = float(parts[2])
-
-                    res = (
-                        f"{parts[0]} "
-                        f"{parts[1]} "
-                        f"{self.format_number(num / 100)}"
-                    )
-
-                else:
-
-                    num = float(
-                        current_display_raw
-                    )
-
-                    res = self.format_number(
-                        num / 100
-                    )
-
-                self.display.text = (
-                    self.to_display_text(res)
-                )
-
-            except:
-
-                self.display.text = "خطأ"
-
-        # ==============================
-        # زر إعادة الضبط 🔄
-        # ==============================
-
-        elif value == "🔄":
-
-            self.clear()
-
-    # ==================================
-    # إجراء العملية الحسابية
-    # ==================================
-
-    def calculate(self):
-
-        try:
-
-            raw_text = self.to_raw_text(
-                self.display.text
-            )
-
-            parts = raw_text.split()
-
-            if len(parts) != 3:
-
-                return
-
-            num1 = float(parts[0])
-
-            op = parts[1]
-
-            num2 = float(parts[2])
-
-            # العملية
-
-            if op == "+":
-
-                res = num1 + num2
-
-            elif op == "-":
-
-                res = num1 - num2
-
-            elif op == "×":
-
-                res = num1 * num2
-
-            elif op == "÷":
-
-                if num2 == 0:
-
-                    self.display.text = "خطأ"
-
-                    self.reset_state()
-
-                    return
-
-                res = num1 / num2
-
-            else:
-
-                return
-
-            # تنسيق النتيجة
-
-            formatted_res = self.format_number(
-                res
-            )
-
-            # حفظ العملية في السجل
-
-            self.history.append(
-                f"{raw_text} = {formatted_res}"
-            )
-
-            # عرض النتيجة
-
-            self.display.text = (
-                self.to_display_text(
-                    formatted_res
-                )
-            )
-
-            self.reset_state()
-
-        except:
-
-            self.display.text = "خطأ"
-
-            self.reset_state()
-
-    # ==================================
-    # مسح الحاسبة
-    # ==================================
-
-    def clear(self):
-
-        self.display.text = (
-            self.to_display_text("0")
-        )
-
-        self.reset_state()
-
-    # ==================================
-    # إعادة الحالة
-    # ==================================
-
-    def reset_state(self):
-
-        self.first_number = None
-
-        self.operator = None
-
-        self.new_number = True
-
-    # ==================================
-    # تنسيق الأرقام
-    # ==================================
-
-    def format_number(self, number):
-
-        if number == int(number):
-
-            return str(int(number))
-
-        return (
-            f"{number:.8f}"
-            .rstrip("0")
-            .rstrip(".")
-        )
-
-
-if __name__ == "__main__":
-
-    Calculator().run()
+if __name__ == '__main__':
+    CalculatorApp().run()

@@ -5,7 +5,7 @@ package.name = calculator
 package.domain = org.example
 
 source.dir = .
-source.include_exts = py,png,jpg,jpeg,kv,atlas
+source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf
 
 version = 1.0
 

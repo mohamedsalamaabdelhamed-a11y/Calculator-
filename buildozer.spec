@@ -1,27 +1,52 @@
 [app]
 
 title = Calculator
+
 package.name = calculator
+
 package.domain = org.example
 
 source.dir = .
+
 source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf
 
 version = 1.0
 
-requirequirements = python3,kivy,arabic_reshaper,python-bidi
+requirements = python3,kivy,arabic-reshaper,python-bidi
 
 orientation = portrait
+
 fullscreen = 0
 
+
+# ---------------------------------------------------------
+# Android
+# ---------------------------------------------------------
+
 android.api = 34
+
 android.minapi = 21
+
 android.ndk = 27c
-android.archs = arm64-v8a
+
+android.archs = arm64-v8a, armeabi-v7a
 
 android.accept_sdk_license = True
+
+
+# ---------------------------------------------------------
+# اسم التطبيق
+# ---------------------------------------------------------
+
+android.presplash_color = #F7F7F7
+
+
+# ---------------------------------------------------------
+# إعدادات Buildozer
+# ---------------------------------------------------------
 
 [buildozer]
 
 log_level = 2
+
 warn_on_root = 1

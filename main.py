@@ -15,17 +15,18 @@ from kivy.core.text import LabelBase
 
 
 # =========================================================
-# معالجة النص العربي (تعديل الحروف والاتجاه)
+# معالجة النص العربي
 # =========================================================
 
 def fix_text(text):
     """إصلاح عرض النص العربي وتوصيل الأحرف بشكل صحيح"""
     if not text:
         return ""
-    # التحقق مما إذا كان النص يحتوي على حروف عربية
+
     if re.search(r'[\u0600-\u06FF]', text):
         reshaped = arabic_reshaper.reshape(text)
         return get_display(reshaped)
+
     return text
 
 
@@ -178,23 +179,32 @@ class CalculatorApp(App):
 
         self.sub_display = Label(
             text="",
+            font_name=ARABIC_FONT,
             font_size="18sp",
             color=(0.5, 0.5, 0.5, 1),
             halign="right",
             valign="bottom"
         )
-        # ربط الحجم الديناميكي لضبط المحاذاة جهة اليمين
-        self.sub_display.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
+
+        self.sub_display.bind(
+            size=lambda instance, val:
+            setattr(instance, 'text_size', val)
+        )
 
         self.main_display = Label(
             text="0",
+            font_name=ARABIC_FONT,
             font_size="48sp",
             color=(0, 0, 0, 1),
             bold=True,
             halign="right",
             valign="bottom"
         )
-        self.main_display.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
+
+        self.main_display.bind(
+            size=lambda instance, val:
+            setattr(instance, 'text_size', val)
+        )
 
         display_box.add_widget(self.sub_display)
         display_box.add_widget(self.main_display)
@@ -250,7 +260,11 @@ class CalculatorApp(App):
                 bg_color=bg,
                 text_color=fg
             )
-            btn.bind(on_release=self.on_button_press)
+
+            btn.bind(
+                on_release=self.on_button_press
+            )
+
             grid.add_widget(btn)
 
         main_layout.add_widget(grid)
@@ -262,6 +276,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def update_display(self):
+
         if self.expression:
             self.main_display.text = self.expression
         else:
@@ -272,20 +287,32 @@ class CalculatorApp(App):
     # =====================================================
 
     def on_button_press(self, instance):
+
         text = instance.text
 
         if text == "AC":
+
             self.expression = ""
             self.sub_display.text = ""
+
         elif text == "⌫":
+
             self.expression = self.expression[:-1]
+
         elif text == "=":
+
             self.calculate()
+
         elif text == "⇄":
+
             self.show_converter_message(None)
+
         elif text == "%":
+
             self.add_percent()
+
         else:
+
             self.add_to_expression(text)
 
         self.update_display()
@@ -295,19 +322,31 @@ class CalculatorApp(App):
     # =====================================================
 
     def add_to_expression(self, text):
+
         operators = "+−×÷"
 
         if text in operators:
+
             if not self.expression:
                 return
+
             if self.expression[-1] in operators:
                 self.expression = self.expression[:-1]
 
         if text == ".":
-            parts = re.split(r"[+−×÷]", self.expression)
+
+            parts = re.split(
+                r"[+−×÷]",
+                self.expression
+            )
+
             if parts and "." in parts[-1]:
                 return
-            if not self.expression or self.expression[-1] in operators:
+
+            if (
+                not self.expression
+                or self.expression[-1] in operators
+            ):
                 self.expression += "0"
 
         self.expression += text
@@ -317,17 +356,35 @@ class CalculatorApp(App):
     # =====================================================
 
     def add_percent(self):
+
         if not self.expression:
             return
 
-        match = re.search(r"(\d+(?:\.\d+)?)$", self.expression)
+        match = re.search(
+            r"(\d+(?:\.\d+)?)$",
+            self.expression
+        )
+
         if match:
+
             number = match.group(1)
+
             try:
+
                 value = float(number)
                 percent = value / 100
-                result = str(int(percent)) if percent.is_integer() else str(percent)
-                self.expression = self.expression[:-len(number)] + result
+
+                result = (
+                    str(int(percent))
+                    if percent.is_integer()
+                    else str(percent)
+                )
+
+                self.expression = (
+                    self.expression[:-len(number)]
+                    + result
+                )
+
             except Exception:
                 pass
 
@@ -336,10 +393,12 @@ class CalculatorApp(App):
     # =====================================================
 
     def calculate(self):
+
         if not self.expression:
             return
 
         try:
+
             formatted_expr = (
                 self.expression
                 .replace("×", "*")
@@ -347,7 +406,10 @@ class CalculatorApp(App):
                 .replace("−", "-")
             )
 
-            if not re.fullmatch(r"[0-9+\-*/(). ]+", formatted_expr):
+            if not re.fullmatch(
+                r"[0-9+\-*/(). ]+",
+                formatted_expr
+            ):
                 raise ValueError
 
             result_value = eval(
@@ -357,17 +419,29 @@ class CalculatorApp(App):
             )
 
             if isinstance(result_value, float):
-                result = str(int(result_value)) if result_value.is_integer() else str(round(result_value, 10))
+
+                result = (
+                    str(int(result_value))
+                    if result_value.is_integer()
+                    else str(round(result_value, 10))
+                )
+
             else:
+
                 result = str(result_value)
 
-            record = f"{self.expression} = {result}"
+            record = (
+                f"{self.expression} = {result}"
+            )
+
             self.history.append(record)
 
             self.sub_display.text = self.expression
+
             self.expression = result
 
         except Exception:
+
             self.main_display.text = fix_text("خطأ")
             self.expression = ""
 
@@ -376,6 +450,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_menu(self, instance):
+
         content = BoxLayout(
             orientation="vertical",
             padding=12,
@@ -418,9 +493,26 @@ class CalculatorApp(App):
             separator_height=1
         )
 
-        history_button.bind(on_release=lambda x: (popup.dismiss(), self.show_history(None)))
-        clear_button.bind(on_release=lambda x: (popup.dismiss(), self.clear_history()))
-        about_button.bind(on_release=lambda x: (popup.dismiss(), self.show_about()))
+        history_button.bind(
+            on_release=lambda x: (
+                popup.dismiss(),
+                self.show_history(None)
+            )
+        )
+
+        clear_button.bind(
+            on_release=lambda x: (
+                popup.dismiss(),
+                self.clear_history()
+            )
+        )
+
+        about_button.bind(
+            on_release=lambda x: (
+                popup.dismiss(),
+                self.show_about()
+            )
+        )
 
         popup.open()
 
@@ -429,6 +521,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_history(self, instance):
+
         content = BoxLayout(
             orientation="vertical",
             padding=12,
@@ -442,9 +535,13 @@ class CalculatorApp(App):
             size_hint_y=None,
             spacing=6
         )
-        history_layout.bind(minimum_height=history_layout.setter("height"))
+
+        history_layout.bind(
+            minimum_height=history_layout.setter("height")
+        )
 
         if not self.history:
+
             empty_label = Label(
                 text=fix_text("لا يوجد سجل حاليًا"),
                 font_name=ARABIC_FONT,
@@ -453,11 +550,16 @@ class CalculatorApp(App):
                 size_hint_y=None,
                 height=50
             )
+
             history_layout.add_widget(empty_label)
+
         else:
+
             for item in reversed(self.history):
+
                 lbl = Label(
-                    text=item,
+                    text=fix_text(item),
+                    font_name=ARABIC_FONT,
                     font_size="18sp",
                     color=(0.1, 0.1, 0.1, 1),
                     halign="right",
@@ -465,10 +567,16 @@ class CalculatorApp(App):
                     size_hint_y=None,
                     height=48
                 )
-                lbl.bind(size=lambda instance, val: setattr(instance, 'text_size', val))
+
+                lbl.bind(
+                    size=lambda instance, val:
+                    setattr(instance, 'text_size', val)
+                )
+
                 history_layout.add_widget(lbl)
 
         scroll.add_widget(history_layout)
+
         content.add_widget(scroll)
 
         bottom_bar = BoxLayout(
@@ -504,8 +612,16 @@ class CalculatorApp(App):
             size_hint=(0.90, 0.70)
         )
 
-        clear_button.bind(on_release=lambda x: (popup.dismiss(), self.clear_history()))
-        close_button.bind(on_release=popup.dismiss)
+        clear_button.bind(
+            on_release=lambda x: (
+                popup.dismiss(),
+                self.clear_history()
+            )
+        )
+
+        close_button.bind(
+            on_release=popup.dismiss
+        )
 
         popup.open()
 
@@ -514,6 +630,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def clear_history(self):
+
         self.history.clear()
 
     # =====================================================
@@ -521,6 +638,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_about(self):
+
         content = BoxLayout(
             orientation="vertical",
             padding=20,
@@ -528,7 +646,9 @@ class CalculatorApp(App):
         )
 
         text = Label(
-            text=fix_text("الحاسبة\n\nتطبيق حاسبة بسيط وسريع"),
+            text=fix_text(
+                "الحاسبة\n\nتطبيق حاسبة بسيط وسريع"
+            ),
             font_name=ARABIC_FONT,
             font_size="19sp",
             color=(0.15, 0.15, 0.15, 1),
@@ -555,7 +675,10 @@ class CalculatorApp(App):
             size_hint=(0.80, 0.45)
         )
 
-        close_button.bind(on_release=popup.dismiss)
+        close_button.bind(
+            on_release=popup.dismiss
+        )
+
         popup.open()
 
     # =====================================================
@@ -563,6 +686,7 @@ class CalculatorApp(App):
     # =====================================================
 
     def show_converter_message(self, instance):
+
         content = BoxLayout(
             orientation="vertical",
             padding=20,
@@ -570,7 +694,9 @@ class CalculatorApp(App):
         )
 
         label = Label(
-            text=fix_text("المحول\n\nسيتم إضافة أدوات التحويل لاحقًا"),
+            text=fix_text(
+                "المحول\n\nسيتم إضافة أدوات التحويل لاحقًا"
+            ),
             font_name=ARABIC_FONT,
             font_size="19sp",
             color=(0.15, 0.15, 0.15, 1),
@@ -596,7 +722,10 @@ class CalculatorApp(App):
             size_hint=(0.80, 0.45)
         )
 
-        close_button.bind(on_release=popup.dismiss)
+        close_button.bind(
+            on_release=popup.dismiss
+        )
+
         popup.open()
 
 

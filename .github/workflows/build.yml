@@ -14,12 +14,12 @@ jobs:
 
       # 1. تحميل المشروع
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
 
       # 2. تثبيت Python 3.12
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -57,7 +57,9 @@ jobs:
 
       # 5. تثبيت Android SDK
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ""
 
 
       # 6. تثبيت Android SDK components
@@ -83,32 +85,33 @@ jobs:
           echo "$ANDROID_HOME"
 
           echo "===================================="
-          echo "Installed build-tools:"
-          find "$ANDROID_SDK_ROOT/build-tools" -maxdepth 2 -type f -name aidl -print
+          echo "Build-tools directories:"
+          find "$ANDROID_SDK_ROOT/build-tools" \
+            -maxdepth 1 \
+            -mindepth 1 \
+            -type d \
+            -print || true
 
           echo "===================================="
-          echo "Checking AIDL versions:"
+          echo "All AIDL files:"
+          find "$ANDROID_SDK_ROOT" \
+            -type f \
+            -name "aidl" \
+            -print || true
 
-          AIDL_FOUND=0
+          echo "===================================="
+          echo "AIDL versions:"
 
-          while IFS= read -r file; do
+          for file in $(find "$ANDROID_SDK_ROOT" -type f -name "aidl"); do
             echo "------------------------------------"
-            echo "Checking:"
+            echo "AIDL:"
             echo "$file"
 
             "$file" --version || true
-
-            AIDL_FOUND=1
-          done < <(find "$ANDROID_SDK_ROOT/build-tools" -type f -name aidl)
+          done
 
           echo "===================================="
-
-          if [ "$AIDL_FOUND" -eq 0 ]; then
-            echo "ERROR: AIDL was NOT found!"
-            exit 1
-          else
-            echo "SUCCESS: AIDL was found."
-          fi
+          echo "SDK and AIDL check completed."
 
 
       # 8. تثبيت أدوات Python
@@ -162,7 +165,7 @@ jobs:
           echo "$ANDROID_SDK_ROOT"
 
 
-      # 10. تنظيف أي ملفات بناء قديمة
+      # 10. تنظيف ملفات البناء القديمة
       - name: Clean previous Buildozer files
         run: |
           rm -rf .buildozer

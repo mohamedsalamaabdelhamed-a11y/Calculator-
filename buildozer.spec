@@ -33,9 +33,11 @@ android.archs = arm64-v8a, armeabi-v7a
 
 android.accept_sdk_license = True
 
+android.enable_androidx = True
+
 
 # ---------------------------------------------------------
-# اسم التطبيق
+# واجهة التطبيق
 # ---------------------------------------------------------
 
 android.presplash_color = #F7F7F7

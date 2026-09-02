@@ -14,19 +14,19 @@ jobs:
 
       # 1. تحميل المشروع
       - name: Checkout project
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
 
-      # 2. تثبيت Python 3.12
+      # 2. تثبيت Python 3.11 (الإصدار المستقر والموصى به لـ Buildozer)
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
 
       # 3. تثبيت Java 17
       - name: Set up Java 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
@@ -57,12 +57,10 @@ jobs:
 
       # 5. تثبيت Android SDK
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: ""
+        uses: android-actions/setup-android@v3
 
 
-      # 6. تثبيت Android SDK components
+      # 6. تثبيت مادي لمكونات Android SDK والتراخيص
       - name: Install Android SDK components
         run: |
           yes | sdkmanager --licenses || true
@@ -99,22 +97,8 @@ jobs:
             -name "aidl" \
             -print || true
 
-          echo "===================================="
-          echo "AIDL versions:"
 
-          for file in $(find "$ANDROID_SDK_ROOT" -type f -name "aidl"); do
-            echo "------------------------------------"
-            echo "AIDL:"
-            echo "$file"
-
-            "$file" --version || true
-          done
-
-          echo "===================================="
-          echo "SDK and AIDL check completed."
-
-
-      # 8. تثبيت أدوات Python
+      # 8. تثبيت أدوات Python و Buildozer و Cython المعتمدة
       - name: Install Python build tools
         run: |
           python --version
@@ -128,20 +112,12 @@ jobs:
           python -m pip install buildozer
 
 
-      # 9. التأكد من الإصدارات
+      # 9. التأكد من إصدارات البيئة
       - name: Check build environment
         run: |
           echo "===================================="
           echo "Python:"
           python --version
-
-          echo "===================================="
-          echo "Python location:"
-          which python
-
-          echo "===================================="
-          echo "Pip:"
-          python -m pip --version
 
           echo "===================================="
           echo "Buildozer:"
@@ -155,10 +131,6 @@ jobs:
           echo "===================================="
           echo "JAVA_HOME:"
           echo "$JAVA_HOME"
-
-          echo "===================================="
-          echo "ANDROID_HOME:"
-          echo "$ANDROID_HOME"
 
           echo "===================================="
           echo "ANDROID_SDK_ROOT:"
@@ -194,12 +166,6 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
         run: |
           echo "Starting Buildozer..."
-
-          echo "Python version:"
-          python --version
-
-          echo "Buildozer version:"
-          buildozer version
 
           yes | buildozer android debug
 

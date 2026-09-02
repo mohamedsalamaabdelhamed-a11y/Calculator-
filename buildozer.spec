@@ -8,11 +8,11 @@ package.domain = org.example
 
 source.dir = .
 
-source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf
+source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf
 
 version = 1.0
 
-requirements = python3,kivy,arabic-reshaper,python-bidi
+requirements = python3,kivy,arabic_reshaper,python-bidi,setuptools
 
 orientation = portrait
 
@@ -27,7 +27,7 @@ android.api = 34
 
 android.minapi = 21
 
-android.ndk = 27c
+android.ndk = 25b
 
 android.archs = arm64-v8a, armeabi-v7a
 

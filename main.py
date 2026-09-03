@@ -1,3 +1,4 @@
+import os
 import re
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -31,19 +32,22 @@ def fix_text(text):
 
 
 # =========================================================
-# الخط العربي
+# الخط العربي (التحقق الآمن)
 # =========================================================
 
-FONT_PATH = "fonts/NotoSansArabic-Regular.ttf"
+FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "NotoSansArabic-Regular.ttf")
 
-try:
-    LabelBase.register(
-        name="Arabic",
-        fn_regular=FONT_PATH
-    )
-    ARABIC_FONT = "Arabic"
-except Exception:
-    ARABIC_FONT = "Roboto"
+ARABIC_FONT = "Roboto"  # الخط الافتراضي كخيار احتياطي
+
+if os.path.exists(FONT_PATH):
+    try:
+        LabelBase.register(
+            name="Arabic",
+            fn_regular=FONT_PATH
+        )
+        ARABIC_FONT = "Arabic"
+    except Exception as e:
+        print(f"Error registering font: {e}")
 
 
 # =========================================================

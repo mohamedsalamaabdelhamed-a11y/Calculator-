@@ -17,16 +17,16 @@ jobs:
         uses: actions/checkout@v4
 
 
-      # 2. تثبيت Python 3.11 (الإصدار المستقر والموصى به لـ Buildozer)
+      # 2. تثبيت Python 3.11
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
 
-      # 3. تثبيت Java 17
+      # 3. تثبيت Java 17 (تم التحديث إلى v5 لحل تحذير الإيقاف)
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -52,7 +52,8 @@ jobs:
             libffi-dev \
             libssl-dev \
             ccache \
-            lld
+            lld \
+            openjdk-17-jdk
 
 
       # 5. تثبيت Android SDK
@@ -60,15 +61,16 @@ jobs:
         uses: android-actions/setup-android@v3
 
 
-      # 6. تثبيت مادي لمكونات Android SDK والتراخيص
-      - name: Install Android SDK components
+      # 6. تثبيت مادي لمكونات Android SDK والموافقة الآلية على التراخيص
+      - name: Install Android SDK components & Accept Licenses
         run: |
-          yes | sdkmanager --licenses || true
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
 
-          sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
             "platform-tools" \
             "platforms;android-34" \
-            "build-tools;34.0.0"
+            "build-tools;34.0.0" || true
 
 
       # 7. فحص Android SDK و AIDL
@@ -88,13 +90,6 @@ jobs:
             -maxdepth 1 \
             -mindepth 1 \
             -type d \
-            -print || true
-
-          echo "===================================="
-          echo "All AIDL files:"
-          find "$ANDROID_SDK_ROOT" \
-            -type f \
-            -name "aidl" \
             -print || true
 
 
@@ -132,10 +127,6 @@ jobs:
           echo "JAVA_HOME:"
           echo "$JAVA_HOME"
 
-          echo "===================================="
-          echo "ANDROID_SDK_ROOT:"
-          echo "$ANDROID_SDK_ROOT"
-
 
       # 10. تنظيف ملفات البناء القديمة
       - name: Clean previous Buildozer files
@@ -158,7 +149,7 @@ jobs:
           cat buildozer.spec
 
 
-      # 12. بناء APK
+      # 12. بناء APK مع الموافقة التلقائية التامة على الاستفسارات
       - name: Build APK with Buildozer
         env:
           JAVA_HOME: ${{ env.JAVA_HOME }}
@@ -167,7 +158,7 @@ jobs:
         run: |
           echo "Starting Buildozer..."
 
-          yes | buildozer android debug
+          yes | buildozer -v android debug
 
 
       # 13. عرض ملفات APK الناتجة

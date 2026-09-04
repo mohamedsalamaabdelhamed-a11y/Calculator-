@@ -1,78 +1,85 @@
 [app]
 
-# (str) Title of your application
+# اسم التطبيق
 title = Calculator
 
-# (str) Package name
+# اسم الحزمة
 package.name = calculator
 
-# (str) Package domain (needed for android/ios packaging)
+# نطاق الحزمة
 package.domain = org.example
 
-# (str) Source code where the main.py lives
+# مجلد المشروع
 source.dir = .
 
-# (list) Source files to include (exts found in the project)
+# الملفات التي تدخل داخل APK
 source.include_exts = py,png,jpg,jpeg,kv,atlas,ttf,otf
 
-# (list) List of inclusions using pattern matching
+# مجلد الخطوط
 source.include_patterns = fonts/*
 
-# (str) Application versioning
+# إصدار التطبيق
 version = 1.0
 
-# (list) Application requirements
-# تمت إضافة pypdf/typing-extensions أو المكتبات المساندة لضمان استقرار arabic_reshaper و python-bidi
-requirements = python3,kivy==2.3.0,arabic_reshaper,python-bidi,setuptools
+# متطلبات Python
+requirements = python3==3.11.9,hostpython3==3.11.9,kivy==2.3.0,arabic-reshaper,python-bidi
 
-# (str) Supported orientation
+# اتجاه الشاشة
 orientation = portrait
 
-# (bool) Indicate if the application should be fullscreen or not
+# ليس ملء الشاشة
 fullscreen = 0
 
 
-# ---------------------------------------------------------
-# Android Specific Settings
-# ---------------------------------------------------------
+# =========================================================
+# Android
+# =========================================================
 
-# (int) Target Android API
+# Android API
 android.api = 34
 
-# (int) Minimum API supported
+# أقل إصدار Android
 android.minapi = 21
 
-# (str) Android NDK version to use
+# NDK المتوافق مع بيئة p4a القديمة
 android.ndk = 25b
 
-# (list) The Android architectures to build for
-android.archs = arm64-v8a, armeabi-v7a
+# المعماريات
+android.archs = arm64-v8a,armeabi-v7a
 
-# (bool) Accept SDK license automatically
+# قبول ترخيص Android SDK
 android.accept_sdk_license = True
 
-# (bool) Enable AndroidX support
+# AndroidX
 android.enable_androidx = True
 
-# (list) Permissions
-# android.permissions = INTERNET
-
-
-# ---------------------------------------------------------
-# UI & Splash Screen
-# ---------------------------------------------------------
-
+# لون شاشة البداية
 android.presplash_color = #F7F7F7
 
 
-# ---------------------------------------------------------
-# Buildozer Configuration
-# ---------------------------------------------------------
+# =========================================================
+# Python-for-Android
+# =========================================================
+
+# مهم جداً:
+# لا نستخدم أحدث p4a
+# نثبت الإصدار الذي كان يستخدم Python 3.11
+
+p4a.url = https://github.com/kivy/python-for-android.git
+
+p4a.branch = master
+
+p4a.commit = v2024.01.21
+
+p4a.bootstrap = sdl2
+
+
+# =========================================================
+# Buildozer
+# =========================================================
 
 [buildozer]
 
-# (int) Log level (0 = error only, 1 = info, 2 = debug (with command output))
 log_level = 2
 
-# (int) Display warning if buildozer is run as root (0 = false, 1 = true)
 warn_on_root = 1
